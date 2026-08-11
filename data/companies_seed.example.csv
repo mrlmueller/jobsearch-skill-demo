@@ -1,0 +1,4 @@
+company_id,name,location_city,location_region,commute_minutes,website,careers_url,ats_type,ats_slug,ats_feed_url,size_bucket,industry,tech_relevance,source,source_url,contact_email,last_verified,scrape_status,notes,active_werkstudent_seen
+gitlab,GitLab,,remote,,https://about.gitlab.com/,https://about.gitlab.com/jobs/,greenhouse,gitlab,https://boards-api.greenhouse.io/v1/boards/gitlab/jobs,large,software,high,example,,,2026-08-11,,Beispiel-Eintrag: öffentlicher Greenhouse-Feed,
+spotify,Spotify,,remote,,https://www.spotify.com/,https://www.lifeatspotify.com/,lever,spotify,https://api.lever.co/v0/postings/spotify?mode=json,large,software,high,example,,,2026-08-11,,Beispiel-Eintrag: öffentlicher Lever-Feed,
+personio,Personio,München,Bayern,,https://www.personio.de/,https://www.personio.com/about-personio/careers/,personio,personio,https://personio.jobs.personio.de/xml,large,software,high,example,,,2026-08-11,,Beispiel-Eintrag: öffentlicher Personio-XML-Feed,

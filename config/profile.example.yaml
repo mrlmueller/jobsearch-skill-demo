@@ -1,0 +1,95 @@
+# profile.example.yaml — Vorlage für das Suchprofil (Grundlage für Filter & Scoring)
+# Kopieren nach config/profile.yaml und an die eigene Suche anpassen.
+# profile.yaml selbst bleibt lokal (.gitignore).
+
+person:
+  base_city: Ulm
+  # Radius: alles ~1 h Bahn um die Basisstadt ODER 100 % Remote (remote gleichwertig)
+  max_commute_minutes: 60
+  remote_ok: true
+  regions_in_radius: [Ulm, Neu-Ulm, Günzburg, Biberach, Memmingen, Heidenheim, Aalen, Göppingen, Geislingen, Augsburg, Stuttgart, Bad Schussenried]
+
+# Zielrollen — pro Synonym eine eigene API-Query (Arbeitsagentur/Adzuna kennen KEIN Boolean)
+target_titles_de:
+  - Werkstudent Softwareentwicklung
+  - Werkstudent Informatik
+  - Werkstudent IT
+  - Werkstudent Programmierung
+  - Werkstudent Webentwicklung
+  - Werkstudent Full-Stack
+  - Werkstudent Automatisierung
+  - Werkstudent DevOps
+  - Junior Softwareentwickler
+  - Junior Full-Stack Entwickler
+  - Junior Webentwickler
+  - Softwareentwickler Automatisierung
+  - Werkstudent Prozessautomatisierung
+target_titles_en:
+  - Working Student Software Development
+  - Working Student Software Engineer
+  - Junior Software Engineer
+  - Junior Full Stack Developer
+  - Junior Automation Engineer
+  - Internal Tools Engineer
+  - Automation Engineer
+
+# Technologie-Anker: fürs Scoring (Plus-Punkte) + Tag-Extraktion, NICHT als Titel
+tech_anchors:
+  - python
+  - fastapi
+  - typescript
+  - react
+  - next.js
+  - go
+  - docker
+  - sql
+  - api
+  - automatisierung
+  - llm
+  - ki
+  - proxmox
+
+# Muss-Kriterien (Hard-Filter — fehlt eins → status='ignored', nicht bewerten)
+must:
+  employment_types: [werkstudent, teilzeit, praktikum, working student, part-time, intern]
+  role_is_tech: true          # Entwicklung/Automatisierung/IT — kein reiner Support/Vertrieb
+  location_in_radius_or_remote: true
+
+# Plus-Kriterien (Ranking, additiv)
+plus:
+  tech_tag_match: 10          # je Treffer aus tech_anchors
+  startup_or_small_team: 15
+  ki_affine_firma: 15
+  no_cover_letter_or_takehome: 10   # "ohne Anschreiben" / Take-Home statt Live-Leetcode
+  flexible_hours_or_remote: 10
+  uebernahme_perspektive: 10
+  from_companies_seed: 10           # Firma steht in data/companies_seed.csv (regional verankert)
+
+# Minus/Flag (NICHT ausschließen, nur markieren / abwerten)
+minus_flags:
+  live_leetcode_signal: -5
+  konzern_massenprozess: -5
+exclude_keywords:              # bei Junior-Suche Titel mit diesen Wörtern rausfiltern
+  - senior
+  - lead
+  - principal
+  - teamleiter
+  - "(m/w/d) Vertrieb"
+
+# Referenz-Profiltext fürs Embedding-Scoring (Phase 3, Stufe 1) — eigenen Text einsetzen
+reference_profile: >
+  Full-Stack-Entwickler, der interne Tools, Automatisierungen und Web-Apps baut.
+  Python (FastAPI), TypeScript/React/Next.js, Go, Docker, Homelab/DevOps, LLM-Integration.
+  Bevorzugt kleine motivierte Teams, freie Zeiteinteilung, Remote/Hybrid.
+  Werkstudent, später Junior.
+
+# Zielgehalt (Kontext, nicht Filter) — eigene Werte eintragen
+salary_context:
+  min_eur_per_hour: 0
+  target_eur_per_hour: 0
+
+# Scoring-/Digest-Parameter
+scoring:
+  min_score_for_digest: 40
+  max_llm_per_run: 15          # Kostendeckel Phase 3
+  digest_max_items: 40

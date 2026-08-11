@@ -1,0 +1,7 @@
+.env
+data/seen.sqlite*
+data/runs/
+__pycache__/
+config/profile.yaml
+digests/
+data/companies_seed.csv

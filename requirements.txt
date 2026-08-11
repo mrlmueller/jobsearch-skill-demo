@@ -1,0 +1,6 @@
+httpx
+tenacity
+rapidfuzz
+pyyaml
+defusedxml
+pytest

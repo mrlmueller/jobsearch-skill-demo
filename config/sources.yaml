@@ -1,0 +1,124 @@
+# sources.yaml — Quellen-Registry (verifiziert 2026-07-23)
+# phase: wann bauen. method: api|scrape|ats|email_alert|directory. key: braucht API-Key?
+# Details/Belege: ../2026-07-23_16_Case-Study-1_Vertiefung.md und ../2026-07-23_19_...Bauspezifikation.md
+
+# ── LAYER A: kostenlose APIs (Mengen-Kern) ─────────────────────────────
+api:
+  arbeitsagentur:
+    phase: 1
+    key: false
+    base: https://rest.arbeitsagentur.de/jobboerse/jobsuche-service
+    search_endpoint: /pc/v4/app/jobs
+    detail_endpoint: /pc/v4/jobdetails/{base64_refnr}
+    header: {X-API-Key: jobboerse-jobsuche}   # Fallback-Schreibweise: X-API-KEY
+    params_example: {was: "<synonym>", wo: Ulm, umkreis: 100, arbeitszeit: "tz;ho", veroeffentlichtseit: 14, size: 100, page: 1}
+    note: "Größte DE-DB, großteils exklusiv. Kein Boolean -> pro Synonym eine Query. Volltext via detail_endpoint."
+  arbeitnow:
+    phase: 1
+    key: false
+    endpoint: https://www.arbeitnow.com/api/job-board-api?page={n}
+    note: "Startup/ATS-Stellen (Personio/Greenhouse/Lever), komplementär. Keine Server-Filter -> client-seitig filtern. Volltext enthalten."
+  adzuna:
+    phase: 2
+    key: true            # app_id + app_key, gratis registrieren
+    endpoint: https://api.adzuna.com/v1/api/jobs/de/search/1
+    params_example: {what_or: "werkstudent junior softwareentwickler fullstack automatisierung", what_exclude: "senior lead", where: Ulm, distance: 100, category: it-jobs, part_time: 1, results_per_page: 50, sort_by: date}
+    note: "Aggregiert Indeed/Stepstone. Nur Snippet -> Volltext bei Bedarf per Firecrawl nachladen."
+  himalayas:
+    phase: 2
+    key: false
+    endpoint: https://himalayas.app/jobs/api/search?q={query}&limit=50
+    note: "Remote. Volltext. VERIFIZIERT 2026-07-23: 'sort=dateDesc' ist ungültig geworden (400 Invalid sort) — ohne sort abfragen. Filter: locationRestrictions leer oder DE/Europa."
+  jobicy:
+    phase: 2
+    key: false
+    endpoint: https://jobicy.com/api/v2/remote-jobs?count=50&industry=dev&geo=germany
+    note: "Remote-Alternative. Volltext + Gehalt."
+  jsearch:
+    phase: none          # verworfen: keine weiteren Key-Registrierungen gewollt
+    key: true
+    endpoint: https://jsearch.p.rapidapi.com/search
+    note: "Google-for-Jobs-Lücke wird stattdessen vom Websuche-Sweep des Skills abgedeckt."
+  linkedin:
+    phase: 2             # GEBAUT 2026-07-24 (fetch_linkedin.py)
+    key: false
+    endpoint: https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords={q}&location={ort}&f_TPR=r604800&start={n}
+    note: "VERIFIZIERT: Guest-Endpoint OHNE Login (10 Cards/Seite, HTML-Fragmente). Sparsam nutzen (3 Queries, 3 Seiten, 2 s Pause) — LinkedIn drosselt sonst (429/999). Kein Volltext."
+  remoteok:
+    phase: 2             # GEBAUT 2026-07-24 (fetch_remote.py)
+    key: false
+    endpoint: https://remoteok.com/api
+    note: "Offene JSON-API, erster Eintrag ist Legal-Hinweis. Filter: Rolle + Worldwide/EU."
+  remotive:
+    phase: 2             # GEBAUT 2026-07-24 (fetch_remote.py)
+    key: false
+    endpoint: https://remotive.com/api/remote-jobs?category=software-dev&limit=100
+    note: "Offene JSON-API. Filter: Rolle + candidate_required_location Worldwide/EU/DE."
+
+# ── LAYER B: Firecrawl-Scrape-Portale (Phase 2) ────────────────────────
+# VERIFIZIERT 2026-07-23: Markdown-Format (1 Credit) reicht — Portale liefern
+# regelmäßiges Markdown, Parser in scripts/scrape_portals.py (deterministisch,
+# getestet). json-Format kostet 5 Credits/Seite -> bewusst NICHT genutzt.
+scrape:
+  workwise_campusjaeger:
+    phase: 2
+    url: https://www.campusjaeger.de/werkstudent/softwareentwicklung
+    note: "VERIFIZIERT: basic-Proxy reicht (kein enhanced). 'ohne Anschreiben'. Landesweit ~8 SW-Werkstudenten-Jobs, Ulm-Filter client-seitig."
+  werkstudenten_jobs:
+    phase: 2
+    url: https://www.werkstudenten-jobs.de/werkstudent/software
+    note: "VERIFIZIERT: statisch, sauber parsebar. Liefert Homeoffice-Flags, die die AA-API nicht hat."
+  meinestadt:
+    phase: 2
+    url: https://jobs.meinestadt.de/ulm/studentenjobs
+    note: "VERIFIZIERT: alte URL /ulm/jobs leitet auf Landing um; /studentenjobs liefert ~170 regionale Treffer inkl. Mercedes-Benz Tech Innovation Ulm. Pagination ?page=N (Phase 2 nur Seite 1, Neueste zuerst)."
+  stepstone:
+    phase: 2    # GEBAUT 2026-07-24 (parse_stepstone)
+    url: https://www.stepstone.de/jobs/werkstudent-softwareentwicklung/in-ulm?radius=100
+    note: "VERIFIZIERT: Firecrawl proxy:'auto' überwindet den Anti-Bot (518 Treffer für die Suche). Markdown-Parser vorhanden."
+  absolventa:
+    phase: 2    # GEBAUT 2026-07-24 (parse_absolventa)
+    url: https://www.absolventa.de/werkstudentenjobs/stadt/ulm
+    note: "Neues URL-Schema /werkstudentenjobs/stadt/{stadt} (alte URL 404). Geringer Ulm-Ertrag, aber gratis mitgenommen."
+  get_in_it:
+    phase: 2    # GEBAUT 2026-07-24 (parse_get_in_it)
+    url: https://www.get-in-it.de/jobsuche
+    note: "IT-Einsteiger-Portal. URL-Ortsfilter greift NICHT -> bundesweite Liste; Radius/Remote filtert score.py. Viele Home-Office-Flags."
+
+# ── Nur via Playwright (JS-Apps) → Claude extrahiert, ingest-json ──────
+playwright:
+  indeed:          {url: "https://de.indeed.com/jobs?q=werkstudent+software&l=Ulm&radius=50&fromage=14", note: "Firecrawl scheitert (document_antibot, auch enhanced); lokaler Playwright-Browser lädt die Ergebnisseite. VERIFIZIERT 2026-07-24."}
+  germantechjobs:  {url: "https://germantechjobs.de/jobs/all/Ulm", note: "SPA; rendert in Playwright ('54 IT-Stellen in Ulm'). VERIFIZIERT 2026-07-24."}
+  thu_jobportal:   {url: "https://www.jobportal-ulm.de/hsulcc/", note: "JS-App, keine Listing-Links im statischen DOM."}
+  hnu_jobboerse:   {url: "https://jobboerse.hnu.de/jobs", note: "Next.js, Ergebnisse laden client-seitig."}
+  kimeta:
+    phase: 3
+    url: https://www.kimeta.de
+    note: "Aggregator 1,1 Mio Anzeigen, RSS/Suchagent."
+
+# ── E-Mail-Alerts: OBSOLET (2026-07-24) — direkte Wege gefunden: ─────────
+# linkedin -> Guest-API (Layer A), stepstone -> Firecrawl-Scrape (Layer B),
+# indeed -> Playwright (s. playwright-Block). Nur Xing bleibt unerreichbar
+# (harte Login-Wall; Anzeigenbestand weitgehend deckungsgleich mit StepStone).
+email_alert:
+  xing: {phase: none, note: "Bewusst ausgelassen."}
+
+# ── LAYER C: ATS-Adapter (verdeckter Markt, Phase 3) — Endpoints LIVE getestet ──
+ats:
+  personio:        {phase: 3, endpoint: "https://{slug}.jobs.personio.de/xml", format: xml,  fulltext: true,  note: "DACH-KMU-Standard ⭐. 307 = auf personio.com migriert."}
+  greenhouse:      {phase: 3, endpoint: "https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true", format: json, fulltext: true}
+  lever:           {phase: 3, endpoint: "https://api.lever.co/v0/postings/{company}?mode=json", format: json, fulltext: true}
+  ashby:           {phase: 3, endpoint: "https://api.ashbyhq.com/posting-api/job-board/{slug}", format: json, fulltext: true}
+  recruitee:       {phase: 3, endpoint: "https://{company}.recruitee.com/api/offers/", format: json, fulltext: true}
+  smartrecruiters: {phase: 3, endpoint: "https://api.smartrecruiters.com/v1/companies/{companyId}/postings?limit=100&offset=0", format: json, fulltext: "detail-call", note: "companyId case-sensitiv"}
+  workday:         {phase: 3, endpoint: "POST https://{tenant}.{dcN}.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs", format: json, fulltext: "detail-call", note: "Body {limit:20,offset:0}; dreiteiliger Slug"}
+  teamtailor:      {phase: 3, endpoint: "https://{site}/jobs/show_more?page={n}", format: html, note: "Nur HTML / JSON-LD-Fallback"}
+  # Bau: 1 Personio-Adapter + 1 Clean-JSON-Multi-Adapter (greenhouse/lever/ashby/recruitee/smartrecruiters/workday) + 1 JSON-LD-Fallback.
+
+# ── Regionale Verzeichnisse → Seed-Liste (Phase 3, seltener Refresh) ───
+directory:
+  innovationsregion: {phase: 3, endpoint: "https://innovationsregion-ulm.de/wp-json/wp/v2/unternehmen?per_page=100", note: "WordPress-REST, ~93 Firmen."}
+  startup_region:    {phase: 3, url: "https://startup-region-ulm.de/startups/", note: "1 Seite, ~55 Startups."}
+  science_park_wiki: {phase: 3, endpoint: "https://wissenschaftsstadt.uni-ulm.de/mediawiki/api.php?action=query&list=categorymembers&cmtitle=Kategorie:Firmen&cmlimit=500&format=json", note: "+ cmtitle=Kategorie:Start-Ups. 75+10 Firmen."}
+  thu_portal:        {phase: 3, url: "https://www.jobportal-ulm.de/hsulcc/", note: "Hochschul-Jobboard, offen scrapebar."}
+  hnu_portal:        {phase: 3, url: "https://jobboerse.hnu.de", note: "offen scrapebar."}
